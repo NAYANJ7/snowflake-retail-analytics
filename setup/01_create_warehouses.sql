@@ -1,7 +1,3 @@
--- ============================================================
--- WAREHOUSES — Virtual compute resources
--- ============================================================
-
 USE ROLE SYSADMIN;
 
 -- Primary analytics warehouse (pay-as-you-go, auto-suspend)

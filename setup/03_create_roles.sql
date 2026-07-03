@@ -1,7 +1,3 @@
--- ============================================================
--- ROLE-BASED ACCESS CONTROL (RBAC)
--- ============================================================
-
 USE ROLE ACCOUNTADMIN;
 
 -- Create roles
@@ -45,6 +41,6 @@ GRANT SELECT ON FUTURE VIEWS  IN SCHEMA RETAIL_DW.ANALYTICS  TO ROLE RETAIL_ANAL
 GRANT SELECT ON FUTURE VIEWS  IN SCHEMA RETAIL_DW.ANALYTICS  TO ROLE RETAIL_VIEWER;
 
 -- Assign admin role to your user (replace YOUR_USERNAME)
-GRANT ROLE RETAIL_ADMIN TO USER YOUR_USERNAME;
+GRANT ROLE RETAIL_ADMIN TO USER NAYANJ7;
 
 SHOW GRANTS TO ROLE RETAIL_ANALYST;
