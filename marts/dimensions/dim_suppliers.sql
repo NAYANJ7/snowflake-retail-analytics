@@ -1,0 +1,22 @@
+CREATE OR REPLACE TABLE MARTS.DIM_SUPPLIERS AS
+SELECT
+    S.SUPPLIER_ID,
+    S.SUPPLIER_NAME,
+    S.ADDRESS,
+    S.PHONE_NUMBER,
+    S.ACCOUNT_BALANCE,
+    S.SUPPLIER_TIER,
+    N.N_NAME                                AS NATION_NAME,
+    R.R_NAME                                AS REGION_NAME,
+    CASE R.R_NAME
+        WHEN 'AMERICA'     THEN 'AMERICAS'
+        WHEN 'EUROPE'      THEN 'EMEA'
+        WHEN 'AFRICA'      THEN 'EMEA'
+        WHEN 'MIDDLE EAST' THEN 'EMEA'
+        WHEN 'ASIA'        THEN 'APAC'
+        ELSE 'OTHER'
+    END                                     AS GEO_GROUP,
+    S.STAGED_AT                             AS CREATED_AT
+FROM STAGING.STG_SUPPLIERS S
+LEFT JOIN RAW.NATION N ON S.NATION_ID = N.N_NATIONKEY
+LEFT JOIN RAW.REGION R ON N.N_REGIONKEY = R.R_REGIONKEY;

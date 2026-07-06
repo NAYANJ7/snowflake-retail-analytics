@@ -1,0 +1,24 @@
+CREATE OR REPLACE TABLE MARTS.DIM_CUSTOMERS AS
+SELECT
+    C.CUSTOMER_ID,
+    C.CUSTOMER_NAME,
+    C.ADDRESS,
+    C.PHONE_NUMBER,
+    C.ACCOUNT_BALANCE,
+    C.MARKET_SEGMENT,
+    C.CUSTOMER_TIER,
+    N.N_NAME                                AS NATION_NAME,
+    R.R_NAME                                AS REGION_NAME,
+    -- Enrich with geographic category
+    CASE R.R_NAME
+        WHEN 'AMERICA'  THEN 'AMERICAS'
+        WHEN 'EUROPE'   THEN 'EMEA'
+        WHEN 'AFRICA'   THEN 'EMEA'
+        WHEN 'MIDDLE EAST' THEN 'EMEA'
+        WHEN 'ASIA'     THEN 'APAC'
+        ELSE 'OTHER'
+    END                                     AS GEO_GROUP,
+    C.STAGED_AT                             AS CREATED_AT
+FROM STAGING.STG_CUSTOMERS C
+LEFT JOIN RAW.NATION N ON C.NATION_ID = N.N_NATIONKEY
+LEFT JOIN RAW.REGION R ON N.N_REGIONKEY = R.R_REGIONKEY;

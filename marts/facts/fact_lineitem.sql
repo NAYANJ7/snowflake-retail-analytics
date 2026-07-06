@@ -1,0 +1,40 @@
+CREATE OR REPLACE TABLE MARTS.FACT_LINEITEM AS
+SELECT
+    LI.ORDER_ID,
+    LI.PART_ID,
+    LI.SUPPLIER_ID,
+    LI.LINE_NUMBER,
+    O.CUSTOMER_ID,                          -- Pulled from orders
+    -- Date foreign keys
+    SD.DATE_KEY                             AS SHIP_DATE_KEY,
+    RD.DATE_KEY                             AS RECEIPT_DATE_KEY,
+    CD.DATE_KEY                             AS COMMIT_DATE_KEY,
+    -- Dates
+    LI.SHIP_DATE,
+    LI.COMMIT_DATE,
+    LI.RECEIPT_DATE,
+    -- Measure: quantities
+    LI.QUANTITY,
+    -- Measure: financials
+    LI.EXTENDED_PRICE,
+    LI.DISCOUNT_RATE,
+    LI.DISCOUNT_AMOUNT,
+    LI.TAX_RATE,
+    LI.NET_PRICE,
+    LI.GROSS_PRICE,
+    -- Measure: delivery performance
+    LI.DELIVERY_DAYS,
+    LI.DAYS_LATE_TO_COMMIT,
+    -- Flags
+    LI.RETURN_FLAG,
+    LI.IS_RETURNED,
+    LI.IS_ON_TIME,
+    LI.SHIP_MODE,
+    LI.LINE_STATUS,
+    LI.SHIP_INSTRUCTIONS,
+    LI.STAGED_AT                            AS LOADED_AT
+FROM STAGING.STG_LINEITEM LI
+LEFT JOIN STAGING.STG_ORDERS O   ON LI.ORDER_ID = O.ORDER_ID
+LEFT JOIN MARTS.DIM_DATE SD      ON LI.SHIP_DATE    = SD.FULL_DATE
+LEFT JOIN MARTS.DIM_DATE RD      ON LI.RECEIPT_DATE = RD.FULL_DATE
+LEFT JOIN MARTS.DIM_DATE CD      ON LI.COMMIT_DATE  = CD.FULL_DATE;
