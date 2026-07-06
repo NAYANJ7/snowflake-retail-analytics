@@ -1,0 +1,84 @@
+CREATE OR REPLACE VIEW ANALYTICS.VW_CUSTOMER_LTV AS
+WITH customer_base AS (
+    SELECT
+        FO.CUSTOMER_ID,
+        DC.CUSTOMER_NAME,
+        DC.MARKET_SEGMENT,
+        DC.CUSTOMER_TIER,
+        DC.NATION_NAME,
+        DC.REGION_NAME,
+        DC.GEO_GROUP,
+        MIN(FO.ORDER_DATE)                              AS FIRST_ORDER_DATE,
+        MAX(FO.ORDER_DATE)                              AS LAST_ORDER_DATE,
+        DATEDIFF('month', MIN(FO.ORDER_DATE), MAX(FO.ORDER_DATE)) AS TENURE_MONTHS,
+        COUNT(DISTINCT FO.ORDER_ID)                     AS TOTAL_ORDERS,
+        SUM(FL.NET_PRICE)                               AS TOTAL_REVENUE,
+        SUM(FL.QUANTITY)                                AS TOTAL_UNITS,
+        AVG(FO.ORDER_TOTAL_AMOUNT)                      AS AVG_ORDER_VALUE,
+        COUNT(CASE WHEN FL.IS_RETURNED THEN 1 END)      AS TOTAL_RETURNS,
+        SUM(FL.DISCOUNT_AMOUNT)                         AS TOTAL_DISCOUNTS_RECEIVED
+    FROM MARTS.FACT_ORDERS FO
+    JOIN MARTS.FACT_LINEITEM FL ON FO.ORDER_ID = FL.ORDER_ID
+    JOIN MARTS.DIM_CUSTOMERS DC ON FO.CUSTOMER_ID = DC.CUSTOMER_ID
+    GROUP BY 1, 2, 3, 4, 5, 6, 7
+)
+SELECT
+    *,
+    TOTAL_REVENUE / NULLIF(TENURE_MONTHS, 0)            AS MONTHLY_REV_RATE,
+    TOTAL_ORDERS  / NULLIF(TENURE_MONTHS, 0)            AS MONTHLY_ORDER_FREQ,
+    NTILE(10) OVER (ORDER BY TOTAL_REVENUE DESC)         AS REVENUE_DECILE,
+    PERCENT_RANK() OVER (ORDER BY TOTAL_REVENUE)        AS REVENUE_PERCENTILE,
+    SUM(TOTAL_REVENUE) OVER ()                          AS GRAND_TOTAL_REV,
+    ROUND(TOTAL_REVENUE / SUM(TOTAL_REVENUE) OVER () * 100, 4) AS REVENUE_SHARE_PCT
+FROM customer_base;
+
+
+-- ============================================================
+-- VIEW 4: RFM Analysis (Recency, Frequency, Monetary)
+-- ============================================================
+CREATE OR REPLACE VIEW ANALYTICS.VW_RFM_SEGMENTATION AS
+WITH rfm_raw AS (
+    SELECT
+        CUSTOMER_ID,
+        MAX(ORDER_DATE)                         AS LAST_ORDER_DATE,
+        -- Use max date in dataset as reference point
+        DATEDIFF('day', MAX(ORDER_DATE), '1998-12-01') AS RECENCY_DAYS,
+        COUNT(DISTINCT ORDER_ID)                AS FREQUENCY,
+        SUM(ORDER_TOTAL_AMOUNT)                 AS MONETARY
+    FROM MARTS.FACT_ORDERS
+    GROUP BY 1
+),
+rfm_scored AS (
+    SELECT
+        *,
+        NTILE(5) OVER (ORDER BY RECENCY_DAYS ASC)  AS R_SCORE, -- Lower recency = better
+        NTILE(5) OVER (ORDER BY FREQUENCY DESC)    AS F_SCORE,
+        NTILE(5) OVER (ORDER BY MONETARY DESC)     AS M_SCORE
+    FROM rfm_raw
+)
+SELECT
+    RS.CUSTOMER_ID,
+    DC.CUSTOMER_NAME,
+    DC.MARKET_SEGMENT,
+    DC.NATION_NAME,
+    RS.LAST_ORDER_DATE,
+    RS.RECENCY_DAYS,
+    RS.FREQUENCY         AS TOTAL_ORDERS,
+    ROUND(RS.MONETARY, 2) AS TOTAL_SPEND,
+    RS.R_SCORE,
+    RS.F_SCORE,
+    RS.M_SCORE,
+    (RS.R_SCORE + RS.F_SCORE + RS.M_SCORE) AS RFM_COMBINED_SCORE,
+    -- Business segment labels
+    CASE
+        WHEN RS.R_SCORE >= 4 AND RS.F_SCORE >= 4 THEN 'CHAMPIONS'
+        WHEN RS.R_SCORE >= 3 AND RS.F_SCORE >= 3 THEN 'LOYAL'
+        WHEN RS.R_SCORE >= 4 AND RS.F_SCORE <= 2 THEN 'NEW_CUSTOMER'
+        WHEN RS.R_SCORE >= 3 AND RS.F_SCORE >= 2 THEN 'POTENTIAL_LOYAL'
+        WHEN RS.R_SCORE <= 2 AND RS.F_SCORE >= 4 THEN 'AT_RISK'
+        WHEN RS.R_SCORE <= 2 AND RS.F_SCORE >= 2 THEN 'NEEDS_ATTENTION'
+        WHEN RS.R_SCORE <= 1                       THEN 'LOST'
+        ELSE 'OTHERS'
+    END                  AS CUSTOMER_SEGMENT
+FROM rfm_scored RS
+JOIN MARTS.DIM_CUSTOMERS DC ON RS.CUSTOMER_ID = DC.CUSTOMER_ID;
