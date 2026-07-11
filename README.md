@@ -86,7 +86,7 @@ customer, product, and supply chain insights from 7.5M+ records.
 <<<<<<< HEAD
 
 <div align="center">
-  <img src="docs/architecture-diagram.png" alt="RetailDW architecture diagram — Medallion layers from raw TPC-H source through to analytics views" width="800">
+  <img src="docs/architecture-diagram.jpg" alt="RetailDW architecture diagram — Medallion layers from raw TPC-H source through to analytics views" width="800">
 </div>
 
 <br>
@@ -282,7 +282,7 @@ snowflake-retail-analytics/
 ├── advanced/       → Streams, Tasks, Time Travel, Cloning, secure views
 ├── monitoring/     → Automated data quality checks
 └── docs/
-    ├── architecture-diagram.png
+    ├── architecture-diagram.jpg
     └── screenshots/
         ├── sales-kpis.png
         ├── rfm-segmentation.png
