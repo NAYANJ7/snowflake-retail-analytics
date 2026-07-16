@@ -68,7 +68,7 @@ SNOWFLAKE_SAMPLE_DATA.TPCH_SF1
 The warehouse follows a Medallion Architecture that separates raw ingestion, transformations, dimensional modeling, and business analytics into independent layers.
 
 <p align="center">
-<img src="docs/architecture-diagram.png" width="900">
+<img src="docs/architecture-diagram.jpg" width="900">
 </p>
 
 ---
