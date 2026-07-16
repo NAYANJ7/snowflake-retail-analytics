@@ -3,107 +3,287 @@
 # 🏔️ RetailDW
 ### End-to-End Retail Analytics Data Warehouse on Snowflake
 
-*Medallion Architecture · Star Schema · TPC-H Benchmark Dataset (8.6M+ rows)*
+**Production-Grade Data Warehouse • Medallion Architecture • Star Schema • 8.6M+ Benchmark Records**
 
-[![Snowflake](https://img.shields.io/badge/Snowflake-29B5E8?style=flat&logo=snowflake&logoColor=white)](https://www.snowflake.com/)[cite: 1, 2]
-[![SQL](https://img.shields.io/badge/SQL-blue?style=flat&logo=database)](.)[cite: 1, 2]
-[![Architecture](https://img.shields.io/badge/Architecture-Medallion-orange)](.)[cite: 1, 2]
-[![Edition](https://img.shields.io/badge/Edition-Standard-lightgrey)](.)[cite: 2]
-[![Status](https://img.shields.io/badge/Status-Complete-brightgreen)](.)[cite: 2]
+<p>
+
+[![Snowflake](https://img.shields.io/badge/Snowflake-29B5E8?style=for-the-badge&logo=snowflake&logoColor=white)](https://www.snowflake.com/)
+[![SQL](https://img.shields.io/badge/SQL-025E8C?style=for-the-badge)](.)
+[![Architecture](https://img.shields.io/badge/Architecture-Medallion-orange?style=for-the-badge)](.)
+[![Status](https://img.shields.io/badge/Status-Complete-brightgreen?style=for-the-badge)](.)
+[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](.)
+
+</p>
+
+*A production-style Retail Analytics Data Warehouse built entirely on Snowflake, implementing Medallion Architecture, dimensional modeling, analytical SQL, data quality monitoring, security, and automation using Snowflake-native capabilities.*
 
 </div>
 
 ---
 
-## 📋 Table of Contents
-- [🔎 Overview](#-overview)[cite: 2]
-- [📊 Dataset](#-dataset)[cite: 2]
-- [🏗️ Architecture](#-architecture)[cite: 2]
-- [⚙️ Key Features](#-key-features)[cite: 2]
-- [🧠 Engineering Notes: Standard Edition Adaptations](#-engineering-notes-standard-edition-adaptations)[cite: 2]
-- [📈 Analytics in Action](#-analytics-in-action)[cite: 2]
-- [🛠️ Tech Stack](#-tech-stack)[cite: 2]
-- [📁 Repository Structure](#-repository-structure)[cite: 2]
-- [⚡ Quick Start](#-quick-start)[cite: 2]
-- [🌟 What I Learned](#-what-i-learned)[cite: 2]
+# 📖 Table of Contents
+
+- [Overview](#-overview)
+- [Why This Project?](#-why-this-project)
+- [Dataset](#-dataset)
+- [Business Problem](#-business-problem)
+- [Architecture](#-architecture)
+- [Medallion Architecture](#-medallion-architecture)
+- [Star Schema Design](#-star-schema-design)
+- [Project Highlights](#-project-highlights)
+- [Repository Structure](#-repository-structure)
+- [Execution Flow](#-execution-flow)
+- [Analytics Layer](#-analytics-layer)
+- [Advanced Snowflake Features](#-advanced-snowflake-features)
+- [Engineering Notes](#-engineering-notes)
+- [Screenshots](#-screenshots)
+- [Tech Stack](#-tech-stack)
+- [Quick Start](#-quick-start)
+- [Learning Outcomes](#-learning-outcomes)
+- [Future Improvements](#-future-improvements)
 
 ---
 
-## 🔎 Overview
+# 🔍 Overview
 
-**RetailDW** is a production-style Retail Analytics Data Warehouse built entirely on Snowflake, implementing a full **Medallion Architecture** (Bronze → Silver → Gold → Analytics) to turn 8.6M+ raw transactional rows into customer, product, and supply-chain insights.
+RetailDW is an **end-to-end cloud data warehouse** built completely on **Snowflake** using the **Medallion Architecture**.
 
-Everything here — ingestion, modeling, security, automation, and analytics — runs on a single free-tier Snowflake trial account, executed end-to-end from the CLI.
+The project demonstrates how raw transactional data can be transformed into business-ready analytical models by applying industry-standard data engineering practices.
 
----
+Instead of simply creating tables and running SQL queries, this project simulates how a modern enterprise data warehouse is designed.
 
-## 📊 Dataset
+The pipeline begins with raw source data and progresses through multiple transformation layers before exposing business-friendly analytical views for reporting and decision-making.
 
-**TPC-H Benchmark Data** — built into every Snowflake account at `SNOWFLAKE_SAMPLE_DATA.TPCH_SF1`. No download, no external source, no setup friction. Anyone with a free Snowflake trial can reproduce this project exactly.
-
-| Table | Rows | Description |
-|-------|-----:|-------------|
-| ORDERS | 1,500,000 | Customer purchase orders |
-| LINEITEM | 6,001,215 | Individual order line items |
-| CUSTOMER | 150,000 | Customer master data |
-| SUPPLIER | 10,000 | Supplier master data |
-| PART | 200,000 | Product/parts catalog |
-| PARTSUPP | 800,000 | Part–supplier relationships |
-| NATION / REGION | 30 | Geography reference |
-
-**Business story:** A global retail & supply chain company, modeled from raw source data through to executive-level analytics.
+The implementation follows the same architectural principles commonly used by organizations building enterprise-scale data platforms on Snowflake.
 
 ---
 
-## 🏗️ Architecture
+# 💡 Why This Project?
 
-<div align="center">
-  <img src="docs/architecture-diagram.jpg" alt="RetailDW architecture diagram" width="800">
-</div>
-<br>
+Most portfolio projects demonstrate only SQL querying.
 
-The pipeline moves data through four layers, each with a distinct job:
+This project focuses on **data engineering** rather than simple analytics.
 
-```text
-SNOWFLAKE_SAMPLE_DATA (source)
-        │
-        ▼
-┌──────────────────────────────────────────────────────┐
-│                  RETAIL_DW database                  │
-│                                                      │
-│  ┌────────┐   ┌──────────┐   ┌────────┐  ┌─────────┐ │
-│  │  RAW   │ → │ STAGING  │ → │ MARTS  │→ │ANALYTICS│ │
-│  │(Bronze)│   │ (Silver) │   │ (Gold) │  │         │ │
-│  └────────┘   └──────────┘   └────────┘  └─────────┘ │
-│                                                      │
-│  ┌──────────────┐      ┌──────────────────┐          │
-│  │  MONITORING  │      │  Advanced Layer  │          │
-│  │ (DQ + Logs)  │      │ Streams / Tasks  │          │
-│  └──────────────┘      └──────────────────┘          │
-└──────────────────────────────────────────────────────┘
-Star schema (MARTS layer):  Plaintext                    DIM_DATE
-                       │
-DIM_CUSTOMERS ─── FACT_ORDERS
-                       │
-                  FACT_LINEITEM ─── DIM_PRODUCTS
-                       │
-                   DIM_SUPPLIERS[cite: 1, 2]
-Grain: FACT_LINEITEM — one row per order line item  Conformed dimension: DIM_DATE joins to order, ship, commit, and receipt dates  ⚙️ Key FeaturesFeatureImplementationMedallion ArchitectureRAW → STAGING → MARTS → ANALYTICS[cite: 1, 2]Star Schema Modeling2 fact tables, 4 dimension tables[cite: 1, 2]Window FunctionsYoY/MoM revenue growth, RFM scoring, Pareto analysis, CLV[cite: 1, 2]Streams & TasksCDC pipeline with hourly incremental sync[cite: 1, 2]Time TravelHistorical point-in-time queries and recovery pattern[cite: 1, 2]Zero-Copy CloningInstant DEV/TEST database and table clones[cite: 1, 2]Scheduled Aggregate RefreshTask-driven refresh tables (materialized-view equivalent)  Role-Based Data MaskingSecure views enforcing masking via CURRENT_ROLE()  Region-Based Row FilteringSecure view row filtering (row-access-policy equivalent)  RBAC4-tier role hierarchy (Admin → Engineer → Analyst → Viewer)[cite: 1, 2]Data Quality7-check automated DQ suite with result logging[cite: 1, 2]Stored ProceduresJavaScript-based pipeline automation[cite: 1, 2]🧠 Engineering Notes: Standard Edition AdaptationsThis project runs on Snowflake Standard Edition (free trial) — which doesn't include two Enterprise+ features that most reference architectures assume: native Materialized Views and Dynamic Data Masking / Row Access Policies. Rather than skip these capabilities, they were rebuilt using patterns available on every Snowflake edition:  Enterprise+ FeatureStandard Edition Equivalent Built HereCREATE MATERIALIZED VIEWA regular table + a TASK on a CRON schedule calling a stored procedure to rebuild it  CREATE MASKING POLICYA SECURE VIEW with a CASE WHEN CURRENT_ROLE() ... expression per column  CREATE ROW ACCESS POLICYA SECURE VIEW with a CASE WHEN CURRENT_ROLE() ... expression in the WHERE clause  End-user behavior is identical — different roles see different data — but every line of SQL runs on a $0 account. This constraint-driven substitution was one of the more useful parts of building the project.  📈 Analytics in ActionSales KPIs — Revenue, MoM & YoY Growth  Revenue, order counts, and units sold aggregated by year/quarter/month, with month-over-month and year-over-year growth calculated via LAG() window functions.  RFM Customer Segmentation  Customers scored 1–5 on Recency, Frequency, and Monetary value using NTILE(5), then labeled into segments — Champions, Loyal, At-Risk, Lost — for retention targeting.  Product Performance — ABC / Pareto Analysis  Products ranked by revenue contribution with a running cumulative percentage, classifying each into A/B/C tiers using the 80/20 Pareto rule.  Supplier Scorecard  A composite 100-point supplier score blending on-time delivery rate, return rate, and average delivery speed.  Role-Based Masking, Verified  The same VW_CUSTOMERS_MASKED view, queried as RETAIL_ADMIN (full data) vs. RETAIL_VIEWER (masked name and phone) — proof the role-based protection actually works.  💡 Save your Snowsight screenshots into docs/screenshots/ using the filenames above, or rename them to match — see the setup note at the end of this file.  🛠️ Tech StackSnowflake — Cloud Data Warehouse (Standard Edition)[cite: 1, 2]SnowSQL — CLI for script execution and automation  VS Code + Snowflake Extension — primary editor, integrated terminal[cite: 1, 2]SQL — standard SQL + Snowflake Scripting (JavaScript stored procedures)[cite: 1, 2]Git / GitHub — version control, phase-by-phase commit history  📁 Repository StructurePlaintextsnowflake-retail-analytics/[cite: 1, 2]
-├── setup/          → Warehouses, databases, RBAC roles[cite: 1, 2]
-├── raw/            → Bronze layer: source ingestion[cite: 1, 2]
-├── staging/        → Silver layer: cleansing + enrichment[cite: 1, 2]
-├── marts/          → Gold layer: star schema[cite: 1, 2]
-│   ├── dimensions/ → DIM_DATE, DIM_CUSTOMERS, DIM_PRODUCTS, DIM_SUPPLIERS
-│   └── facts/      → FACT_ORDERS, FACT_LINEITEM[cite: 1, 2]
-├── analytics/      → Business views: KPIs, RFM, CLV, Pareto, supplier scorecard
-├── advanced/       → Streams, Tasks, Time Travel, Cloning, secure views
-├── monitoring/     → Automated data quality checks[cite: 1, 2]
-└── docs/
-    ├── architecture-diagram.jpg
-    └── screenshots/
-        ├── sales-kpis.png
-        ├── rfm-segmentation.png
-        ├── product-performance.png[cite: 2]
-        ├── supplier-scorecard.png[cite: 2]
-        └── secure-view-masking.png[cite: 2]
-⚡ Quick StartSign up for a free Snowflake trial (Standard Edition is enough — this whole project runs on it)[cite: 2].Clone this repo[cite: 1, 2].Run scripts in order: setup/ → raw/ → staging/ → marts/ (dimensions before facts) → analytics/ → advanced/ → monitoring/[cite: 2].Explore the analytics views in Snowsight or any BI tool[cite: 2].Gotcha: Accounts created via signup.snowflake.com use the hyphenated account identifier format (orgname-accountname), not the legacy dot format[cite: 2]. Use the exact value from Snowsight → Account → Account Identifier[cite: 2].🌟 What I LearnedDesigning a multi-layer data warehouse from raw ingestion through to business-ready analytics views[cite: 2].Writing analytical SQL beyond basic queries: window functions, CTEs, RFM scoring, Pareto/ABC classification[cite: 2].Diagnosing real platform constraints and rebuilding Enterprise-only features (materialized views, masking/row-access policies) using Standard-Edition-compatible patterns[cite: 2].Setting up RBAC from scratch: warehouses, databases, schemas, and a 4-tier role hierarchy with future grants[cite: 2].Automating data quality validation with stored procedures and a persistent results log[cite: 2].Running the entire build from the CLI (SnowSQL + PowerShell), including debugging account identifiers, authentication, and reserved-keyword SQL errors along the way[cite: 2].
+It showcases:
+
+- Production-style Medallion Architecture
+- Dimensional Data Modeling
+- Star Schema Design
+- Enterprise SQL
+- Snowflake Native Features
+- Security Implementation
+- Data Quality Monitoring
+- Automated Refresh Pipelines
+- Business Analytics Layer
+
+Instead of solving one analytical question, this project builds an entire analytics platform from the ground up.
+
+---
+
+# 📊 Dataset
+
+The project uses the **TPC-H Benchmark Dataset**, which is built directly into every Snowflake account.
+
+Source:
+
+```
+SNOWFLAKE_SAMPLE_DATA.TPCH_SF1
+```
+
+No downloads are required.
+
+Anyone with a free Snowflake account can reproduce this project.
+
+## Dataset Statistics
+
+| Table | Records | Description |
+|-------|---------:|------------|
+| ORDERS | 1,500,000 | Customer Orders |
+| LINEITEM | 6,001,215 | Order Line Items |
+| CUSTOMER | 150,000 | Customer Master Data |
+| SUPPLIER | 10,000 | Supplier Information |
+| PART | 200,000 | Product Catalog |
+| PARTSUPP | 800,000 | Supplier Inventory |
+| NATION | 25 | Country Reference |
+| REGION | 5 | Region Reference |
+
+### Total Data Processed
+
+> **8.6 Million+ Rows**
+
+---
+
+# 🏢 Business Problem
+
+Imagine a multinational retail company operating across multiple countries.
+
+Every day, millions of transactions are generated involving:
+
+- Customer Orders
+- Product Sales
+- Supplier Deliveries
+- Shipping Operations
+- Inventory
+- Revenue
+
+Raw operational data is not suitable for business reporting.
+
+The organization needs a centralized analytical platform capable of answering questions such as:
+
+- Which customers generate the highest lifetime value?
+- Which suppliers perform best?
+- Which products contribute to 80% of revenue?
+- Which shipping modes are most efficient?
+- Which regions generate the most sales?
+- How is revenue changing month-over-month?
+- Which customers are at risk of churn?
+
+RetailDW solves these problems by transforming raw transactional data into analytical models optimized for reporting.
+
+---
+
+# 🏗️ Architecture
+
+```
+                   SNOWFLAKE_SAMPLE_DATA
+                          │
+                          ▼
+                ┌───────────────────────┐
+                │        RAW            │
+                │      Bronze Layer     │
+                └───────────────────────┘
+                          │
+                          ▼
+                ┌───────────────────────┐
+                │      STAGING          │
+                │      Silver Layer     │
+                └───────────────────────┘
+                          │
+                          ▼
+                ┌───────────────────────┐
+                │        MARTS          │
+                │      Gold Layer       │
+                └───────────────────────┘
+                          │
+                          ▼
+                ┌───────────────────────┐
+                │      ANALYTICS        │
+                │ Business Ready Views  │
+                └───────────────────────┘
+                          │
+                          ▼
+                Dashboards / BI / Reports
+```
+
+---
+
+# 🥇 Medallion Architecture
+
+The warehouse follows the Medallion Architecture, separating data into logical layers.
+
+## 🟤 Bronze Layer (RAW)
+
+The Bronze layer stores source data exactly as received.
+
+Characteristics:
+
+- No business transformations
+- Metadata columns added
+- Immutable copy of source
+- Historical preservation
+
+---
+
+## ⚪ Silver Layer (STAGING)
+
+The Silver layer standardizes and enriches the data.
+
+Operations include:
+
+- Data Cleaning
+- Null Handling
+- Type Conversion
+- Deduplication
+- Standardized Naming
+- Derived Columns
+- Business Rules
+
+---
+
+## 🟡 Gold Layer (MARTS)
+
+The Gold layer contains optimized dimensional models.
+
+This layer includes:
+
+- Fact Tables
+- Dimension Tables
+- Surrogate Keys
+- Business Metrics
+- Analytical Models
+
+The Gold layer is designed for fast analytical querying.
+
+---
+
+# ⭐ Star Schema Design
+
+The project implements a classic dimensional model.
+
+```
+                 DIM_DATE
+                     │
+DIM_CUSTOMERS ─ FACT_ORDERS
+                     │
+              FACT_LINEITEM
+              │            │
+      DIM_PRODUCTS   DIM_SUPPLIERS
+```
+
+## Fact Tables
+
+- FACT_ORDERS
+- FACT_LINEITEM
+
+## Dimension Tables
+
+- DIM_CUSTOMERS
+- DIM_PRODUCTS
+- DIM_SUPPLIERS
+- DIM_DATE
+
+This design minimizes joins while maximizing analytical performance.
+
+---
+
+# 🚀 Project Highlights
+
+✅ Medallion Architecture
+
+✅ 8.6 Million+ Records
+
+✅ Star Schema
+
+✅ Window Functions
+
+✅ Customer Lifetime Value
+
+✅ RFM Segmentation
+
+✅ Pareto Analysis
+
+✅ Supplier Scorecards
+
+✅ Streams & Tasks
+
+✅ Time Travel
+
+✅ Zero-Copy Cloning
+
+✅ Secure Views
+
+✅ Role-Based Access Control
+
+✅ Data Quality Monitoring
+
+✅ Stored Procedures
