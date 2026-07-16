@@ -201,7 +201,7 @@ monitoring/
 Store project screenshots inside:
 
 ```
-docs/screenshots/
+docs/
 ```
 
 Recommended screenshots:
@@ -211,13 +211,6 @@ Recommended screenshots:
 - Revenue Growth
 - Customer LTV
 - RFM Segmentation
-- Product Performance
-- Supplier Scorecard
-- Streams & Tasks
-- Time Travel
-- Zero-Copy Cloning
-- Secure View Masking
-- Data Quality Dashboard
 
 ---
 
